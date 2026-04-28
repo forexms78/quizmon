@@ -32,3 +32,11 @@ export const DIFFICULTY_GRADE: Record<Difficulty, Grade> = {
 }
 
 export const GRADE_ORDER: Grade[] = ['C', 'B', 'A', 'S', 'SS']
+
+export const GRADE_ICONS: Record<Grade, string> = {
+  C: '🌱',
+  B: '💧',
+  A: '🔥',
+  S: '⚡',
+  SS: '👑',
+}

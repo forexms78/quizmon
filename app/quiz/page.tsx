@@ -14,6 +14,11 @@ const QUIZ_DISTRIBUTION: { difficulty: Difficulty; count: number }[] = [
   { difficulty: 'legendary', count: 1 },
 ]
 
+function shuffleOptions(q: Question): Question {
+  const shuffled = [...q.options].sort(() => Math.random() - 0.5)
+  return { ...q, options: shuffled }
+}
+
 async function fetchQuestions(): Promise<Question[]> {
   const result: Question[] = []
   for (const { difficulty, count } of QUIZ_DISTRIBUTION) {
@@ -25,7 +30,7 @@ async function fetchQuestions(): Promise<Question[]> {
     const shuffled = [...data].sort(() => Math.random() - 0.5).slice(0, count)
     result.push(...shuffled)
   }
-  return result.sort(() => Math.random() - 0.5)
+  return result.sort(() => Math.random() - 0.5).map(shuffleOptions)
 }
 
 export default function QuizPage() {

@@ -8,6 +8,7 @@ import { getSavedUserId } from '@/lib/user'
 import { supabase } from '@/lib/supabase'
 import { Monster } from '@/lib/types'
 import { GachaReveal } from '@/components/GachaReveal'
+import { saveQuizHistory } from '@/lib/history'
 
 export default function ResultPage() {
   const router = useRouter()
@@ -22,7 +23,9 @@ export default function ResultPage() {
 
     const raw = localStorage.getItem('quizmon_result')
     if (!raw) { router.push('/'); return }
-    setAnswers(JSON.parse(raw))
+    const parsed: QuizAnswer[] = JSON.parse(raw)
+    setAnswers(parsed)
+    saveQuizHistory(userId, parsed)
 
     supabase.from('collections').select('*').then(({ data }) => {
       setAllMonsters((data as Monster[]) || [])

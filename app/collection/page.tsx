@@ -5,6 +5,7 @@ import { getUserItems } from '@/lib/items'
 import { getSavedUserId } from '@/lib/user'
 import { Monster, Grade, UserItem } from '@/lib/types'
 import { MonsterCard } from '@/components/MonsterCard'
+import { BottomNav } from '@/components/BottomNav'
 import { GRADE_ORDER } from '@/lib/constants'
 
 export default function CollectionPage() {
@@ -41,7 +42,7 @@ export default function CollectionPage() {
   )
 
   return (
-    <div className="flex flex-col min-h-screen px-4 py-6 gap-4">
+    <div className="flex flex-col min-h-screen px-4 py-6 pb-20 gap-4">
       <div className="flex items-center justify-between px-2">
         <h1 className="text-xl font-extrabold text-gray-900">도감</h1>
         <span className="text-sm text-gray-400">{ownedCount} / {allMonsters.length}</span>
@@ -70,6 +71,7 @@ export default function CollectionPage() {
           />
         ))}
       </div>
+      <BottomNav />
     </div>
   )
 }

@@ -1,5 +1,5 @@
 import { Monster } from '@/lib/types'
-import { GRADE_COLORS } from '@/lib/constants'
+import { GRADE_COLORS, GRADE_ICONS } from '@/lib/constants'
 import { GradeTag } from './GradeTag'
 import Image from 'next/image'
 
@@ -23,8 +23,8 @@ export function MonsterCard({ monster, count, silhouette = false, size = 'md' }:
           {monster.image_url ? (
             <Image src={monster.image_url} alt={monster.name} fill className="object-contain rounded-xl" />
           ) : (
-            <div className={`w-full h-full rounded-xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center text-2xl font-black text-gray-400`}>
-              {monster.grade}
+            <div className={`w-full h-full rounded-xl bg-gradient-to-br from-blue-100 to-purple-100 flex items-center justify-center`}>
+              <span className="text-3xl">{GRADE_ICONS[monster.grade]}</span>
             </div>
           )}
         </div>

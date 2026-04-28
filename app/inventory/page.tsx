@@ -7,6 +7,7 @@ import { getSavedUserId } from '@/lib/user'
 import { supabase } from '@/lib/supabase'
 import { MonsterCard } from '@/components/MonsterCard'
 import { SynthesisModal } from '@/components/SynthesisModal'
+import { BottomNav } from '@/components/BottomNav'
 import { GRADE_ORDER } from '@/lib/constants'
 
 export default function InventoryPage() {
@@ -51,7 +52,7 @@ export default function InventoryPage() {
   )
 
   return (
-    <div className="flex flex-col min-h-screen px-4 py-6 gap-4">
+    <div className="flex flex-col min-h-screen px-4 py-6 pb-20 gap-4">
       <div className="flex items-center justify-between px-2">
         <h1 className="text-xl font-extrabold text-gray-900">인벤토리</h1>
         <span className="text-sm text-gray-400">{items.length}종 보유</span>
@@ -98,6 +99,7 @@ export default function InventoryPage() {
           onSuccess={reload}
         />
       )}
+      <BottomNav />
     </div>
   )
 }
