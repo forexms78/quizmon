@@ -7,15 +7,16 @@ import { addItem } from '@/lib/items'
 import { getSavedUserId } from '@/lib/user'
 import { supabase } from '@/lib/supabase'
 import { Monster } from '@/lib/types'
-import { GachaReveal } from '@/components/GachaReveal'
 import { saveQuizHistory } from '@/lib/history'
+import { updateRating } from '@/lib/rating'
 
 export default function ResultPage() {
   const router = useRouter()
   const [answers, setAnswers] = useState<QuizAnswer[]>([])
-  const [gachaResults, setGachaResults] = useState<{ monster: Monster; upgraded: boolean }[]>([])
-  const [phase, setPhase] = useState<'summary' | 'gacha'>('summary')
-  const [allMonsters, setAllMonsters] = useState<Monster[]>([])
+  const [ratingBefore, setRatingBefore] = useState<number | null>(null)
+  const [ratingAfter, setRatingAfter] = useState<number | null>(null)
+  const [copied, setCopied] = useState(false)
+  const [gachaReady, setGachaReady] = useState(false)
 
   useEffect(() => {
     const userId = getSavedUserId()
@@ -27,37 +28,34 @@ export default function ResultPage() {
     setAnswers(parsed)
     saveQuizHistory(userId, parsed)
 
-    supabase.from('collections').select('*').then(({ data }) => {
-      setAllMonsters((data as Monster[]) || [])
+    updateRating(userId, parsed).then(({ before, after }) => {
+      setRatingBefore(before)
+      setRatingAfter(after)
+    })
+
+    // 가챠 백그라운드 처리
+    supabase.from('collections').select('*').then(async ({ data }) => {
+      const monsters = (data as Monster[]) || []
+      const chips = parsed.filter(a => a.correct).map(a => a.question.difficulty)
+      for (const d of chips) {
+        const result = drawMonster(d, monsters)
+        await addItem(userId, result.monster.id)
+      }
+      setGachaReady(true)
     })
   }, [router])
 
-  async function startGacha() {
+  function copyBadge() {
     const userId = getSavedUserId()!
-    const chips = answers.filter(a => a.correct).map(a => a.question.difficulty)
-    const results = chips.map(d => drawMonster(d, allMonsters))
-
-    for (const r of results) {
-      await addItem(userId, r.monster.id)
-    }
-
-    setGachaResults(results)
-    setPhase('gacha')
+    const badgeUrl = `https://img.shields.io/endpoint?url=${window.location.origin}/api/badge/${userId}`
+    const markdown = `![Quizmon Rating](${badgeUrl})`
+    navigator.clipboard.writeText(markdown)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   const score = answers.filter(a => a.correct).length
-
-  if (phase === 'gacha') {
-    return (
-      <div className="flex flex-col min-h-screen px-6 py-8 gap-4">
-        <h2 className="text-xl font-extrabold text-gray-900 text-center">데이터 칩 뽑기</h2>
-        <GachaReveal
-          results={gachaResults}
-          onDone={() => router.push('/inventory')}
-        />
-      </div>
-    )
-  }
+  const ratingDelta = ratingAfter !== null && ratingBefore !== null ? ratingAfter - ratingBefore : null
 
   return (
     <div className="flex flex-col items-center min-h-screen px-6 py-12 gap-8">
@@ -68,6 +66,34 @@ export default function ResultPage() {
           <span className="text-2xl text-gray-400"> / 10</span>
         </h2>
       </div>
+
+      {ratingAfter !== null && ratingBefore !== null ? (
+        <div className="w-full bg-gray-50 rounded-2xl px-5 py-4 flex items-center justify-between">
+          <div>
+            <p className="text-xs text-gray-400 mb-1">레이팅</p>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-extrabold text-gray-900">{ratingAfter}</span>
+              {ratingDelta !== null && (
+                <span className={`text-sm font-bold ${ratingDelta >= 0 ? 'text-green-500' : 'text-red-400'}`}>
+                  {ratingDelta >= 0 ? '+' : ''}{ratingDelta}
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-gray-400 mt-1">{ratingBefore} → {ratingAfter}</p>
+          </div>
+          <button
+            onClick={copyBadge}
+            className="px-3 py-2 rounded-xl bg-gray-800 text-white text-xs font-bold active:scale-95 transition-transform"
+          >
+            {copied ? '복사됨!' : 'GitHub 뱃지 복사'}
+          </button>
+        </div>
+      ) : (
+        <div className="w-full bg-gray-50 rounded-2xl px-5 py-4 flex items-center gap-3">
+          <div className="w-5 h-5 rounded-full border-2 border-gray-300 border-t-gray-600 animate-spin" />
+          <span className="text-sm text-gray-400">레이팅 계산 중...</span>
+        </div>
+      )}
 
       <div className="w-full flex flex-col gap-2">
         {answers.map((a, i) => (
@@ -82,18 +108,14 @@ export default function ResultPage() {
       </div>
 
       <div className="mt-auto w-full flex flex-col gap-3">
-        {score > 0 ? (
-          <button
-            onClick={startGacha}
-            disabled={allMonsters.length === 0}
-            className="w-full py-4 rounded-2xl bg-blue-500 text-white font-bold text-base
-              active:scale-95 transition-transform disabled:opacity-40"
-          >
-            {score}개 데이터 칩 뽑기
-          </button>
-        ) : (
-          <p className="text-center text-gray-400 text-sm">정답이 없어 칩을 획득하지 못했습니다.</p>
-        )}
+        <button
+          onClick={() => router.push('/inventory')}
+          disabled={!gachaReady}
+          className="w-full py-4 rounded-2xl bg-blue-500 text-white font-bold text-base
+            active:scale-95 transition-transform disabled:opacity-40"
+        >
+          {gachaReady ? `인벤토리 보기 (${score}개 획득)` : '처리 중...'}
+        </button>
         <button
           onClick={() => router.push('/quiz')}
           className="w-full py-4 rounded-2xl bg-gray-100 text-gray-600 font-bold text-base"
